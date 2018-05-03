@@ -66,18 +66,4 @@ if __name__ == '__main__':
         tweets_final.append(tweet)
 
     token_counter = Counter(x for xs in tweets_final for x in set(xs))
-    print(token_counter.most_common(30))
-
-
-    # don't throw away the hashtags they might be of value later on
-    # tweets_cleaned = [get_text_cleaned(tweet) for tweet in tweets]
-    # tweets_removed = get_text_removed(tweets_cleaned)
-    # contraction
-    # tweets_tokenized = [tokenize_text(tweet) for tweet in tweets_removed]
-    # tweets_tokenized = tokenize_text(tweets_removed)
-    # nltk.download('wordnet')
-    # tweets_lemmatized = [lemmatize_text(tweet) for tweet in tweets_tokenized]
-    
-    # nltk.download('stopwords')
-    # tweet_stopremoved = remove_stopwords(tweet_tokenized)
-
+    print(token_counter.most_common())

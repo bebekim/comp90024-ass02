@@ -39,16 +39,11 @@ def get_text_cleaned(tweet):
         for men in tweet['entities']['user_mentions']:
             slices += [{'start': men['indices'][0], 'stop': men['indices'][1]}]
     
-    # Strip out the media.
-    if 'media' in tweet['entities']:
-        for med in tweet['entities']['media']:
-            slices += [{'start': med['indices'][0], 'stop': med['indices'][1]}]
-    
     # Strip out the symbols.
     if 'symbols' in tweet['entities']:
         for sym in tweet['entities']['symbols']:
             slices += [{'start': sym['indices'][0], 'stop': sym['indices'][1]}]
-    
+
     # Sort the slices from highest start to lowest.
     slices = sorted(slices, key=lambda x: -x['start'])
     
