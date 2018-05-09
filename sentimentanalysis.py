@@ -1,8 +1,11 @@
 # encoding: utf-8
+import sys
+import getopt
 import fileinput
 import json
 import pprint
-
+import glob
+import os
 import re
 import string
 
@@ -59,32 +62,53 @@ def lemmatize_content(text):
         tmp.append(lemmatize(word))
     return ' '.join(tmp)
 
-def int64toint32(x):
-    x = x.astype(np.int32)
-    return x
 
+def read_arguments(argv):
+    input_dir = argv[0]
+    output_dir = argv[1]
 
+    # try:
+    #     opts, args = getopt.getopt(argv[1:], 'io:')
+    # except getopt.GetoptError as error:
+    #     print(error)
+    #     sys.exit()
+        
+    # for opt, arg in opts:
+    #     if opt in ("-i"):
+    #         input_dir = arg
+    #     if opt in ("-o"):
+    #         output_dir = arg
+    #     else:
+    #         print('Invalid option')
+    #         sys.exit()
+    return input_dir, output_dir
 
-def read_tweets(filenames):
+    
+def read_tweets(input_dir):
     # https://stackoverflow.com/questions/24754861/unicode-file-with-python-and-fileinput
     # fileinput.input(filename, openhook=fileinput.hook_encoded("utf-8")).
     # raw = url.read().decode('windows-1252')
-    tweets = []
-    with fileinput.input((filenames)) as f:
-        for line in f:
-            tweet = json.loads(line)
-            tweet['text_tokenized'] = preprocess(tweet['text'])
-            tweets.append(tweet)
-        return tweets
-    
+    all_tweets = []
+    txt_files = glob.glob(input_dir + '/*.txt')
+    for file in txt_files:
+        with open(file, 'r', encoding='utf-8') as tweet_data:
+            tweets = []
+            for line in tweet_data:
+                t = json.loads(line)
+                t['text_tokenized'] = preprocess(t['text'])
+                tweets.append(t)
+        all_tweets.extend(tweets)
+    return all_tweets
+
 
 if __name__ == '__main__':
-    tweets_emotion_file = './data/text_emotion.csv'
+    input_dir, output_dir = read_arguments(sys.argv[1:])
+    tweets_emotion_file = './reference/text_emotion.csv'
     features = ['tweet_id', 'sentiment', 'text']
+    stopword_list = nltk.corpus.stopwords.words("english")
     tweets_emotions = pd.read_csv(tweets_emotion_file)
 
     lemmatizer = WordNetLemmatizer()   
-    stopword_list = nltk.corpus.stopwords.words("english")
 
     content_sanitizer = lambda x: sanitize_content(x)
     content_stopwordsremover = lambda x: nostop_content(x)
@@ -110,9 +134,9 @@ if __name__ == '__main__':
     clf = MultinomialNB().fit(X_train_tfidf, y_train)
     y_predict_class = clf.predict(X_test_bow)
 
-    filenames = ['data/MelbourneTweets0.txt', 
-                 'data/MelbourneTweets2.txt']
-    tweets = read_tweets(filenames)
+    # file_path = 'data'
+    # tweets = read_tweets(file_path)
+    tweets = read_tweets(input_dir)
 
     # handles @mention, make lowercase
     tknzr = nltk.tokenize.casual.TweetTokenizer(preserve_case=False, 
@@ -134,9 +158,13 @@ if __name__ == '__main__':
         t.pop('text_tokens', None)
         t['text_sentiment'] = predict_new.tolist()[0]
 
-
     tweets_json = json.dumps(tweets)
 
-    f = open("output.json", "w")
+    print(input_dir)
+    print(output_dir)
+    output_dir = os.path.join(os.getcwd(), output_dir)
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    f = open(output_dir + '/output.json', "w")
     f.write(tweets_json)
     f.close()
