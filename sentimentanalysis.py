@@ -89,6 +89,7 @@ def read_tweets(input_dir):
     # fileinput.input(filename, openhook=fileinput.hook_encoded("utf-8")).
     # raw = url.read().decode('windows-1252')
     all_tweets = []
+    txt_names = os.listdir(input_dir)
     txt_files = glob.glob(input_dir + '/*.txt')
     for file in txt_files:
         with open(file, 'r', encoding='utf-8') as tweet_data:
