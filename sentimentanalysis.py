@@ -17,16 +17,18 @@ from nltk.corpus import stopwords
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer
 from sklearn.pipeline import Pipeline
-from sklearn.model_selection import train_test_split
 from sklearn.naive_bayes import MultinomialNB
 from sklearn import metrics
-from collections import Counter
 
 import numpy as np
 import pandas as pd
 
-# from preprocess import preprocess
-# from clean_text import get_text_sanitized
+from extract_data import prep_training
+from split_train_classifier import train_model
+from preprocess import preprocess
+from classifier import classify
+from write_data import write_tweets
+
 
 def read_arguments(argv):
     input_dir = argv[0]
@@ -53,6 +55,13 @@ def attach_filenames(filenames, tag):
     return files
             
 
+def align_files(input_dir, output_dir):
+    input_files = get_filenames(input_dir, show_folder=True)
+    output_files = attach_filenames(input_files, tag='_output')
+    zipped_files = zip(input_files, output_files)
+    return zipped_files
+
+
 def read_tweets(filename):
     # https://stackoverflow.com/questions/24754861/unicode-file-with-python-and-fileinput
     # fileinput.input(filename, openhook=fileinput.hook_encoded("utf-8")).
@@ -63,44 +72,21 @@ def read_tweets(filename):
             t = json.loads(line)
             tweets.append(t)
         return tweets
+
     
-
-    # for file in txt_files:
-    #     with open(file, 'r', encoding='utf-8') as tweet_data:
-    #         tweets = []
-    #         for line in tweet_data:
-    #             t = json.loads(line)
-    #             t['text_tokenized'] = preprocess(t['text'])
-    #             tweets.append(t)
-    #     all_tweets.extend(tweets)
-    # return all_tweets
-
-
 if __name__ == '__main__':
+    # parse commandline arguments
     input_dir, output_dir = read_arguments(sys.argv[1:])
-    input_files = get_filenames(input_dir, show_folder=True)
-    output_files = attach_filenames(input_files, tag='_output')
-    zipped_files = zip(input_files, output_files)
+    zipped_io = align_files(input_dir, output_dir)
 
+    # conduct supervised learning
+    emotions_labelled_data = prep_training('./reference/text_emotion.csv')
+    emotions_vect, emotions_classifier = train_model(emotions_labelled_data)
 
-    for i, o in list(zipped_files):
+    for i, o in list(zipped_io):
         tweets = read_tweets(i)
         print(len(tweets))
         # t['text_tokenized'] = preprocess(t['text'])
         tweets = preprocess(tweets)
-        classify(tweets)
-        output_tweets(tweets, o)
-        
-
-
-    # def output_tweets(tweets, output_dir, output_file):
-    #     output_path = os.path.join(os.getcwd(), output_dir)
-    #     if not os.path.exists(output_dir):
-    #         os.makedirs(output_dir)
-    #     f = open(output_dir + output_file, "w")
-    #     f.write(tweets_json)
-    #     f.close()
-
-
-    output_dir = os.path.join(os.getcwd(), output_dir)
-    
+        tweets_classified = classify(tweets, emotions_vect, emotions_classifier)
+        write_tweets(tweets, output_dir, o)    
