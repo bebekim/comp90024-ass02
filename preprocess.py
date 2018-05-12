@@ -84,7 +84,7 @@ def lemmatize(word):
 
 
 # list of dictionaries coming in
-def preprocess(tokenizer, tweets, stopword_list):
+def preprocess(tokenizer, tweets, lowercase, stopword_list):
     lemmatizer = WordNetLemmatizer()
     for t in tweets:
         not_a_stopword = []
