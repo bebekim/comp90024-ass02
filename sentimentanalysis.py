@@ -57,7 +57,14 @@ def attach_filenames(filenames, tag):
             f_split = ''.join(f_split)
             files.append(f_split)
     return files
-            
+
+def attach_filename(filename, tag):
+
+    f_split = list(os.path.splitext(filename))
+    if f_split[1] in ['.txt']:
+        f_split[0] += tag
+        f_split = ''.join(f_split)
+    return f_split    
 
 def read_tweets(filename):
     # https://stackoverflow.com/questions/24754861/unicode-file-with-python-and-fileinput
@@ -66,8 +73,11 @@ def read_tweets(filename):
     tweets = []
     with open(filename, 'r', encoding='utf-8') as tweet_data:
         for line in tweet_data:
-            t = json.loads(line)
-            tweets.append(t)
+            try:
+                t = json.loads(line)
+                tweets.append(t)
+            except json.decoder.JSONDecodeError:
+                print ("invalid json:",line)
         print('Read in {0}'.format(filename))
         return tweets
 
@@ -94,35 +104,38 @@ if __name__ == '__main__':
     input_dir, output_dir = read_arguments(sys.argv[1:])
 
     path_to_watch = os.path.join(os.getcwd(), input_dir)
-    before = dict ([(f, None) for f in os.listdir (path_to_watch)])
+   # before = dict ([(f, None) for f in os.listdir (path_to_watch)])
     while 1:
-        print('Waiting...')
-        time.sleep(30)
-        after = dict ([(f, None) for f in os.listdir (path_to_watch)])
-        added = [f for f in after if not f in before]
-        removed = [f for f in before if not f in after]
-        if added:
-            print(','.join(added))
-        if removed:
-            print(','.join(removed))
-        before = after
+        currentfiles=os.listdir (path_to_watch)
         
-        zipped_io = align_files(before, output_dir, input_dir)
-
-        for i, o in zipped_io:
-            print("Waiting...")
+      #  after = dict ([(f, None) for f in os.listdir (path_to_watch)])
+      #  added = [f for f in after if not f in before]
+      #  removed = [f for f in before if not f in after]
+      #  if added:
+      #      print(','.join(added))
+      #  if removed:
+      #      print(','.join(removed))
+      #  before = after
+        
+      #  zipped_io = align_files(before, output_dir, input_dir)
+        if  (len (currentfiles)) > 0:
+            currentfile=currentfiles.pop()
+            outputfile=attach_filename(currentfile, tag='_output')
+            absolutecurrentfile=os.path.join(os.getcwd(), input_dir, currentfile)
             start_time = time.time()
-            tweets = read_tweets(i)
-            # print("Read {0} tweets".format(len(tweets)))
-            # t['text_tokenized'] = preprocess(t['text'])
+            tweets = read_tweets(absolutecurrentfile)
             tweets = preprocess(tweets)
             tweets_classified = classify(tweets, emotions_vect, emotions_classifier)
             # print(tweets_classified[randint(0, len(tweets_classified)-1)]['text_sentiment'])
-            write_tweets(tweets, output_dir, o)
+            write_tweets(tweets, output_dir, outputfile)
             end_time = time.time()
             result_time = end_time - start_time
             
             print('It took {0} second'.format(result_time))
-
-            
+            if os.path.isfile(absolutecurrentfile):
+                    os.remove(absolutecurrentfile)
+        else:
+            print('Waiting...')
+            time.sleep(10)
+                
     
